@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión Multifamiliar El Álamo - Reporte de Pagos</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- jsPDF & AutoTable CDN para descarga de PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Estilos de scrollbar personalizados */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+              800: '#1e3a8a',
+              900: '#172554',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header Superior -->
+  <header class="bg-[#5CE1E6] text-slate-900 border-b border-[#38c5cb] shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-[#5CE1E6] shadow-md shadow-slate-900/20">
+          <i data-lucide="building-2" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-extrabold tracking-tight text-slate-950 flex items-center gap-2">
+            Multifamiliar El Álamo
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-900/10 text-slate-900 border border-slate-900/20">Gestión de Cobranzas</span>
+          </h1>
+          <p class="text-xs text-slate-800 font-medium">Estructurador Oficial de Alquileres y Consumo de Agua (22 Unidades)</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="flex items-center bg-white/85 px-3 py-1.5 rounded-lg border border-[#2db4ba] shadow-sm">
+          <i data-lucide="calendar" class="w-4 h-4 text-slate-700 mr-2"></i>
+          <span class="text-xs text-slate-700 font-bold mr-2">Mes:</span>
+          <input type="text" id="reportMonth" value="JUNIO 2026" class="bg-transparent text-sm font-extrabold text-slate-900 focus:outline-none w-32 uppercase" />
+        </div>
+        <button onclick="loadSampleData()" class="text-xs bg-slate-900 hover:bg-slate-800 text-white font-semibold px-3 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300"></i>
+          Cargar Ejemplo
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Tarjetas de Resumen Financiero Rápido -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+          <i data-lucide="wallet" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Alquileres Cobrados</p>
+          <h3 id="statTotalAlquiler" class="text-xl font-bold text-slate-900 mt-0.5">S/ 0.00</h3>
+          <p class="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
+            <i data-lucide="check-circle-2" class="w-3 h-3"></i> Pagos efectivos
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-100">
+          <i data-lucide="droplet" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Consumo de Agua</p>
+          <h3 id="statTotalAgua" class="text-xl font-bold text-slate-900 mt-0.5">S/ 0.00</h3>
+          <p class="text-[11px] text-sky-600 font-medium flex items-center gap-1 mt-0.5">
+            <i data-lucide="check-circle-2" class="w-3 h-3"></i> Recaudación de agua
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100">
+          <i data-lucide="alert-circle" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Alquileres Pendientes</p>
+          <h3 id="statPendientesCount" class="text-xl font-bold text-rose-600 mt-0.5">0 unidades</h3>
+          <p id="statDeudaMonto" class="text-[11px] text-slate-500 font-medium mt-0.5">Deuda: S/ 0.00</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
+          <i data-lucide="layers" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Estado de Unidades</p>
+          <h3 id="statCoverage" class="text-xl font-bold text-slate-900 mt-0.5">22 Unidades</h3>
+          <p class="text-[11px] text-slate-500 font-medium mt-0.5">100% Multifamiliar El Álamo</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Entrada y Salida Dividida en 2 Columnas -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Columna Izquierda: Entrada del Texto en Bruto -->
+      <div class="lg:col-span-5 space-y-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">1</span>
+              <h2 class="font-bold text-slate-800 text-sm">Pega aquí el Reporte en Bruto</h2>
+            </div>
+            <button onclick="clearRawText()" class="text-xs text-slate-500 hover:text-rose-600 flex items-center gap-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Limpiar
+            </button>
+          </div>
+
+          <p class="text-xs text-slate-500 mb-3">
+            Pega los mensajes de WhatsApp, notas o apuntes del mes. El sistema identificará automáticamente alquileres, consumos de agua, fechas, bancos y montos.
+          </p>
+
+          <textarea id="rawInput" rows="18" oninput="saveToStorage()"
+            placeholder="Ejemplo:
+Dpto 202: 30 de mayo pagó 950 todo junio por BCP. Agua 39.12 el 30 de junio por Plin
+Dpto 302: Alquiler 1000 el 10 de junio BCP. Agua 34.92 el 19 de junio Plin
+Dpto 603: No ha realizado el pago (monto 450). Agua 7.72 el 18 de junio Yape
+Local Panadería 503: 1800 soles alquiler 02 de junio BCP. Agua 85.50..." 
+            class="w-full flex-1 p-3.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition resize-none"></textarea>
+
+          <div class="pt-4 flex items-center gap-3">
+            <button onclick="processRawText()" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold py-3 px-4 rounded-xl shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2 text-sm">
+              <i data-lucide="wand-2" class="w-4 h-4"></i>
+              Procesar y Estructurar Reporte
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna Derecha: Reporte Oficial Estructurado Listo para Copiar -->
+      <div class="lg:col-span-7 space-y-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
+          <div class="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">2</span>
+              <h2 class="font-bold text-slate-800 text-sm">Texto Oficial Generado (Listo para Copiar)</h2>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="copyOfficialText()" id="copyBtn" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm shadow-emerald-600/30 transition flex items-center gap-1.5">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+                <span id="copyBtnText">Copiar Reporte</span>
+              </button>
+              <button onclick="downloadAsPDF()" title="Descargar reporte oficial en formato PDF" class="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm shadow-rose-600/30 transition flex items-center gap-1.5">
+                <i data-lucide="file-down" class="w-4 h-4"></i>
+                <span>Descargar PDF</span>
+              </button>
+              <button onclick="downloadAsText()" title="Descargar como archivo de texto (.txt)" class="p-2 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-600 transition flex items-center gap-1 text-xs font-medium">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">.TXT</span>
+              </button>
+              <button onclick="exportToCSV()" title="Descargar tabla en formato Excel (.csv)" class="p-2 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-600 transition flex items-center gap-1 text-xs font-medium">
+                <i data-lucide="table" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Excel</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="relative flex-1">
+            <textarea id="officialOutput" readonly rows="18" 
+              class="w-full h-full p-4 text-xs font-mono bg-slate-900 text-emerald-400 border border-slate-800 rounded-xl focus:outline-none resize-none leading-relaxed select-all"
+              placeholder="Haz clic en 'Procesar y Estructurar Reporte' o 'Cargar Ejemplo' para ver el reporte oficial generado aquí..."></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pestañas / Acordeón de Vista Detallada Unidad por Unidad -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+            <i data-lucide="sliders" class="w-5 h-5 text-blue-600"></i>
+            Editor y Verificador de las 22 Unidades
+          </h3>
+          <p class="text-xs text-slate-500">Puedes editar cualquier dato directamente en las fichas; el reporte oficial y las sumatorias se recalculan al instante.</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+            <input type="text" id="unitSearchInput" oninput="filterUnits(this.value)" placeholder="Buscar unidad (ej: 603, Panadería)..." 
+              class="text-xs pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 w-52 transition">
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenedor dinámico de pisos y departamentos -->
+      <div id="floorsContainer" class="p-4 sm:p-6 space-y-6">
+        <!-- Renderizado dinámicamente mediante JS -->
+      </div>
+    </div>
+
+    <!-- Banner de Cierre Oficial y Descarga de PDF al Final -->
+    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-[#123e42] text-white p-6 sm:p-8 rounded-2xl border-2 border-[#5CE1E6]/40 shadow-xl space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/80 pb-5">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#5CE1E6]/20 text-[#5CE1E6] border border-[#5CE1E6]/40">
+              DOCUMENTO FINAL LISTO
+            </span>
+            <span class="text-xs text-slate-300">Multifamiliar El Álamo</span>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Descarga el Reporte Oficial en PDF</h3>
+          <p class="text-xs sm:text-sm text-slate-300 max-w-2xl">
+            Genera un documento PDF formal y presentable con membrete institucional turquesa (#5CE1E6), la tabla completa de las 22 unidades, sumatorias exactas y anexo visual con los vouchers de pago adjuntos (4 por página).
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <button onclick="downloadAsPDF()" class="bg-[#5CE1E6] hover:bg-[#4dd2d7] active:scale-95 text-slate-950 font-extrabold py-3.5 px-6 rounded-xl shadow-lg shadow-[#5CE1E6]/25 transition flex items-center gap-2.5 text-sm sm:text-base">
+            <i data-lucide="file-down" class="w-5 h-5 text-slate-950"></i>
+            Descargar Reporte en PDF
+          </button>
+          <button onclick="copyOfficialText()" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-semibold py-3.5 px-5 rounded-xl border border-slate-700 transition flex items-center gap-2 text-sm">
+            <i data-lucide="copy" class="w-4 h-4 text-emerald-400"></i>
+            Copiar Texto
+          </button>
+        </div>
+      </div>
+
+      <!-- Resumen de Cierre en el Banner Final -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+        <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/50">
+          <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Alquileres Efectivos</p>
+          <p id="finalStatAlquiler" class="text-lg font-bold text-emerald-400 mt-1">S/ 0.00</p>
+        </div>
+        <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/50">
+          <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Consumo de Agua</p>
+          <p id="finalStatAgua" class="text-lg font-bold text-sky-400 mt-1">S/ 0.00</p>
+        </div>
+        <div class="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700/50">
+          <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Inmuebles en Mora / Pendientes</p>
+          <p id="finalStatPendientes" class="text-sm font-semibold text-rose-300 mt-1 truncate">Ninguno</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-8 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2">
+      <p>Multifamiliar El Álamo © <span id="currentYear"></span> - Asistente de Gestión Inmobiliaria</p>
+      <p class="text-slate-400">Distribución oficial: Primer Nivel (3) + Pisos 2 al 5 (3 c/u) + Piso 6 (7) = 22 Unidades</p>
+    </div>
+  </footer>
+
+  <!-- Notificación Toast Flotante -->
+  <div id="toastNotification" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-3 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-50 text-sm">
+    <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
+    <span id="toastMessage">Texto copiado con éxito</span>
+  </div>
+
+  <!-- Modal de Vista Previa de Comprobante / Voucher -->
+  <div id="imagePreviewModal" onclick="if(event.target === this) closeImagePreview()" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+      <div class="p-3.5 bg-[#1F293B] text-white flex items-center justify-between">
+        <div>
+          <h3 id="modalPreviewTitle" class="font-bold text-sm text-white">Comprobante de Pago</h3>
+          <p id="modalPreviewSubtitle" class="text-xs text-[#5CE1E6] font-mono mt-0.5"></p>
+        </div>
+        <button type="button" onclick="closeImagePreview()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="p-4 bg-slate-100/80 overflow-auto flex items-center justify-center min-h-[280px] max-h-[72vh]">
+        <img id="modalPreviewImg" src="" alt="Comprobante ampliado" class="max-w-full max-h-[68vh] object-contain rounded-lg shadow-md border border-slate-200 bg-white">
+      </div>
+      <div class="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <span class="flex items-center gap-1.5 font-medium text-slate-600">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+          Multifamiliar El Álamo • Evidencia Registrada
+        </span>
+        <button type="button" onclick="closeImagePreview()" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-lg transition">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. DEFINICIÓN OFICIAL DE LAS 22 UNIDADES
+    // ==========================================
+    const UNIT_DEFINITIONS = [
+      // Primer Nivel
+      { id: "loc-503", floor: "Primer Nivel", name: "Local 503 (Panadería)", isCommercial: true, defaultRent: 0 },
+      { id: "loc-501", floor: "Primer Nivel", name: "Local 501 (Clínica Dental)", isCommercial: true, defaultRent: 0 },
+      { id: "dpto-101", floor: "Primer Nivel", name: "Departamento 101", isCommercial: false, defaultRent: 0 },
+      // Piso 2
+      { id: "dpto-201", floor: "Piso 2", name: "Departamento 201", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-202", floor: "Piso 2", name: "Departamento 202", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-203", floor: "Piso 2", name: "Departamento 203", isCommercial: false, defaultRent: 0 },
+      // Piso 3
+      { id: "dpto-301", floor: "Piso 3", name: "Departamento 301", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-302", floor: "Piso 3", name: "Departamento 302", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-303", floor: "Piso 3", name: "Departamento 303", isCommercial: false, defaultRent: 0 },
+      // Piso 4
+      { id: "dpto-401", floor: "Piso 4", name: "Departamento 401", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-402", floor: "Piso 4", name: "Departamento 402", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-403", floor: "Piso 4", name: "Departamento 403", isCommercial: false, defaultRent: 0 },
+      // Piso 5
+      { id: "dpto-501", floor: "Piso 5", name: "Departamento 501", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-502", floor: "Piso 5", name: "Departamento 502", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-503", floor: "Piso 5", name: "Departamento 503", isCommercial: false, defaultRent: 0 },
+      // Piso 6
+      { id: "dpto-601", floor: "Piso 6", name: "Departamento 601", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-602", floor: "Piso 6", name: "Departamento 602", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-603", floor: "Piso 6", name: "Departamento 603", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-604", floor: "Piso 6", name: "Departamento 604", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-605", floor: "Piso 6", name: "Departamento 605", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-606", floor: "Piso 6", name: "Departamento 606", isCommercial: false, defaultRent: 0 },
+      { id: "dpto-607", floor: "Piso 6", name: "Departamento 607", isCommercial: false, defaultRent: 0 }
+    ];
+
+    // Estado en memoria de cada unidad
+    let unitsData = {};
+
+    function initUnitsData() {
+      UNIT_DEFINITIONS.forEach(u => {
+        unitsData[u.id] = {
+          id: u.id,
+          name: u.name,
+          floor: u.floor,
+          // Alquiler
+          alquilerPagado: false,
+          alquilerFecha: "",
+          alquilerBanco: "BCP",
+          alquilerBancoOtro: "",
+          alquilerOperacion: "",
+          alquilerComprobante: "",
+          alquilerMonto: 0.00,
+          alquilerMotivoNoPago: "NO REPORTADO / PENDIENTE",
+          // Agua
+          aguaPagado: false,
+          aguaFecha: "",
+          aguaBanco: "PLIN",
+          aguaBancoOtro: "",
+          aguaOperacion: "",
+          aguaComprobante: "",
+          aguaMonto: 0.00,
+          aguaMotivoNoPago: "NO REPORTADO / PENDIENTE"
+        };
+      });
+    }
+
+    // Funciones auxiliares para obtener el texto formal exacto
+    function getAlquilerFechaBancoText(u) {
+      if (!u.alquilerPagado) {
+        return u.alquilerMotivoNoPago || "NO HA REALIZADO EL PAGO";
+      }
+      const fecha = (u.alquilerFecha || "").trim().toUpperCase() || "FECHA PENDIENTE";
+      let banco = u.alquilerBanco || "BCP";
+      if (banco === 'OTRO') {
+        banco = (u.alquilerBancoOtro || "").trim().toUpperCase() || "OTRO";
+      }
+      return `${fecha} / ${banco}`;
+    }
+
+    function getAlquilerOperacionText(u) {
+      if (!u.alquilerPagado) {
+        return "PENDIENTE";
+      }
+      const op = (u.alquilerOperacion || "").trim();
+      return op ? op.toUpperCase() : "NO REGISTRA";
+    }
+
+    function getAguaFechaBancoText(u) {
+      if (!u.aguaPagado) {
+        return u.aguaMotivoNoPago || "NO REPORTADO / PENDIENTE";
+      }
+      const fecha = (u.aguaFecha || "").trim().toUpperCase() || "FECHA PENDIENTE";
+      let banco = u.aguaBanco || "PLIN";
+      if (banco === 'OTRO') {
+        banco = (u.aguaBancoOtro || "").trim().toUpperCase() || "OTRO";
+      }
+      return `${fecha} / ${banco}`;
+    }
+
+    function getAguaOperacionText(u) {
+      if (!u.aguaPagado) {
+        return "PENDIENTE";
+      }
+      const op = (u.aguaOperacion || "").trim();
+      return op ? op.toUpperCase() : "NO REGISTRA";
+    }
+
+    // ==========================================
+    // 2. PARSER INTELIGENTE DE TEXTO EN BRUTO
+    // ==========================================
+    function parseRawReport(text) {
+      initUnitsData();
+      if (!text || !text.trim()) {
+        renderUnitsEditor();
+        updateOutputs();
+        return;
+      }
+
+      // Separar el texto en bloques por unidad.
+      const lines = text.split(/\r?\n/);
+      let currentUnitId = null;
+      let unitChunks = {};
+
+      function detectUnitId(str) {
+        const lower = str.toLowerCase();
+        
+        // Locales comerciales prioritarios
+        if (lower.includes('panaderia') || lower.includes('panadería') || (lower.includes('503') && lower.includes('local'))) {
+          return 'loc-503';
+        }
+        if (lower.includes('clinica') || lower.includes('clínica') || lower.includes('dental') || (lower.includes('501') && lower.includes('local'))) {
+          return 'loc-501';
+        }
+        
+        // Departamento 101
+        if (lower.includes('101')) return 'dpto-101';
+        
+        // Pisos 2 al 4
+        for (let f = 2; f <= 4; f++) {
+          for (let r = 1; r <= 3; r++) {
+            const num = `${f}0${r}`;
+            if (new RegExp(`\\b${num}\\b`).test(lower)) {
+              return `dpto-${num}`;
+            }
+          }
+        }
+
+        // Piso 5 (diferenciar de locales de primer nivel)
+        if (lower.includes('501')) return 'dpto-501';
+        if (lower.includes('502')) return 'dpto-502';
+        if (lower.includes('503')) return 'dpto-503';
+
+        // Piso 6
+        for (let r = 1; r <= 7; r++) {
+          const num = `60${r}`;
+          if (new RegExp(`\\b${num}\\b`).test(lower)) {
+            return `dpto-${num}`;
+          }
+        }
+
+        return null;
+      }
+
+      // Procesar línea por línea
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        const detected = detectUnitId(trimmed);
+        if (detected) {
+          currentUnitId = detected;
+          if (!unitChunks[currentUnitId]) unitChunks[currentUnitId] = [];
+          unitChunks[currentUnitId].push(trimmed);
+        } else if (currentUnitId) {
+          unitChunks[currentUnitId].push(trimmed);
+        }
+      });
+
+      // Extraer datos de cada bloque de unidad detectado
+      Object.keys(unitChunks).forEach(uId => {
+        const blockText = unitChunks[uId].join(" ");
+        const parsed = extractUnitDetails(blockText);
+        if (parsed) {
+          unitsData[uId] = { ...unitsData[uId], ...parsed };
+        }
+      });
+
+      renderUnitsEditor();
+      updateOutputs();
+    }
+
+    // Extracción de detalles para una sola unidad
+    function extractUnitDetails(text) {
+      const lower = text.toLowerCase();
+      let res = {
+        alquilerPagado: false,
+        alquilerFecha: "",
+        alquilerBanco: "BCP",
+        alquilerBancoOtro: "",
+        alquilerOperacion: "",
+        alquilerMonto: 0.00,
+        alquilerMotivoNoPago: "NO REPORTADO / PENDIENTE",
+
+        aguaPagado: false,
+        aguaFecha: "",
+        aguaBanco: "PLIN",
+        aguaBancoOtro: "",
+        aguaOperacion: "",
+        aguaMonto: 0.00,
+        aguaMotivoNoPago: "NO REPORTADO / PENDIENTE"
+      };
+
+      // Detectar si el alquiler NO ha sido pagado
+      const noPagoAlquiler = lower.includes('no ha realizado el pago') || 
+                             lower.includes('no pago') || 
+                             lower.includes('no pagó') || 
+                             lower.includes('sin pagar') || 
+                             lower.includes('no ha pagado') ||
+                             lower.includes('debe alquiler');
+
+      let rentPart = text;
+      let waterPart = "";
+
+      const aguaIdx = lower.indexOf('agua');
+      if (aguaIdx !== -1) {
+        rentPart = text.substring(0, aguaIdx);
+        waterPart = text.substring(aguaIdx);
+      }
+
+      // Extraer Alquiler
+      if (noPagoAlquiler) {
+        res.alquilerPagado = false;
+        res.alquilerMotivoNoPago = "NO HA REALIZADO EL PAGO";
+        const amountMatch = rentPart.match(/s\/?\.?\s*(\d+([.,]\d{1,2})?)/i) || 
+                            rentPart.match(/(\d+([.,]\d{1,2})?)\s*(soles|mensual|debe|monto)?/i);
+        if (amountMatch) {
+          res.alquilerMonto = parseFloat(amountMatch[1].replace(',', '.'));
+        }
+      } else {
+        const info = parsePaymentInfo(rentPart, 'alquiler');
+        if (info.found) {
+          res.alquilerPagado = true;
+          res.alquilerFecha = info.fecha;
+          res.alquilerBanco = info.banco;
+          res.alquilerBancoOtro = info.bancoOtro;
+          res.alquilerOperacion = info.operacion || "";
+          res.alquilerMonto = info.monto;
+        }
+      }
+
+      // Extraer Agua
+      if (waterPart) {
+        const noPagoAgua = waterPart.toLowerCase().includes('no ha pagado') || 
+                           waterPart.toLowerCase().includes('debe agua') ||
+                           waterPart.toLowerCase().includes('sin pagar');
+        if (noPagoAgua) {
+          res.aguaPagado = false;
+          res.aguaMotivoNoPago = "NO HA REALIZADO EL PAGO";
+          const waterAmountMatch = waterPart.match(/s\/?\.?\s*(\d+([.,]\d{1,2})?)/i) || 
+                                   waterPart.match(/(\d+([.,]\d{1,2})?)/);
+          if (waterAmountMatch) {
+            res.aguaMonto = parseFloat(waterAmountMatch[1].replace(',', '.'));
+          }
+        } else {
+          const infoAgua = parsePaymentInfo(waterPart, 'agua');
+          if (infoAgua.found) {
+            res.aguaPagado = true;
+            res.aguaFecha = infoAgua.fecha;
+            res.aguaBanco = infoAgua.banco;
+            res.aguaBancoOtro = infoAgua.bancoOtro;
+            res.aguaOperacion = infoAgua.operacion || "";
+            res.aguaMonto = infoAgua.monto;
+          }
+        }
+      }
+
+      return res;
+    }
+
+    // Auxiliar para extraer Fecha, Banco y Monto de un fragmento
+    function parsePaymentInfo(segment, type) {
+      const lower = segment.toLowerCase();
+      let monto = 0.00;
+      let fecha = "";
+      let banco = type === 'agua' ? "PLIN" : "BCP";
+      let bancoOtro = "";
+      let operacion = "";
+
+      // Buscar N° de Operación (ej: "op 123456", "op: 123456", "operacion 849302", "nro 48392", "#98234")
+      const opRegex = /(?:op(?:eraci[oó]n)?\.?|n[r°o]\.?|c[oó]d(?:igo)?\.?|transf(?:erencia)?\.?|#)\s*[:#-]?\s*([a-zA-Z0-9]{4,15})\b/i;
+      const opMatch = segment.match(opRegex);
+      if (opMatch) {
+        operacion = opMatch[1].toUpperCase();
+      }
+
+      // Buscar Montos: "S/ 950", "950.00", "950 soles", "39.12"
+      const montos = [];
+      const regexMonto = /(?:s\/?\.?\s*|soles\s*)?(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:soles)?/gi;
+      let match;
+      while ((match = regexMonto.exec(segment)) !== null) {
+        const val = parseFloat(match[1].replace(',', '.'));
+        if (val > 0 && val !== 101 && val !== 201 && val !== 202 && val !== 203 && 
+            val !== 301 && val !== 302 && val !== 303 && val !== 401 && val !== 402 && 
+            val !== 403 && val !== 501 && val !== 502 && val !== 503 && 
+            !(val >= 601 && val <= 607)) {
+          montos.push(val);
+        }
+      }
+
+      if (montos.length > 0) {
+        monto = type === 'agua' ? montos[montos.length - 1] : montos[0];
+      }
+
+      // Buscar Bancos / Apps
+      const banks = [];
+      if (/bcp/i.test(segment)) banks.push('BCP');
+      if (/bbva|continental/i.test(segment)) banks.push('BBVA');
+      if (/interbank/i.test(segment)) banks.push('INTERBANK');
+      if (/scotiabank/i.test(segment)) banks.push('SCOTIABANK');
+      if (/banbif/i.test(segment)) banks.push('BANBIF');
+      if (/plin/i.test(segment)) banks.push('PLIN');
+      if (/yape/i.test(segment)) banks.push('YAPE');
+      if (/efectivo/i.test(segment)) banks.push('EFECTIVO');
+
+      if (/pago de todo/i.test(segment)) {
+        const extraMatch = segment.match(/pago de todo\s+([a-zA-Z]+)/i);
+        banco = 'OTRO';
+        bancoOtro = extraMatch ? `PAGO DE TODO ${extraMatch[1].toUpperCase()}` : 'PAGO DE TODO EL MES';
+      } else if (banks.length > 1) {
+        banco = 'OTRO';
+        bancoOtro = banks.join(' + ');
+      } else if (banks.length === 1) {
+        banco = banks[0];
+      }
+
+      // Buscar Fechas (ej: "30 de mayo", "10 de junio", "18/06", "30 mayo")
+      const meses = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|setiembre|septiembre|octubre|noviembre|diciembre';
+      const dateRegex = new RegExp(`(\\d{1,2})\\s*(?:de)?\\s*(${meses})`, 'i');
+      const dateMatch = segment.match(dateRegex);
+
+      if (dateMatch) {
+        const dia = dateMatch[1].padStart(2, '0');
+        const mes = dateMatch[2].toUpperCase();
+        fecha = `${dia} DE ${mes}`;
+      } else {
+        const numDate = segment.match(/(\d{1,2})\/(\d{1,2})/);
+        if (numDate) {
+          fecha = `${numDate[1].padStart(2, '0')}/${numDate[2].padStart(2, '0')}`;
+        }
+      }
+
+      return {
+        found: monto > 0 || banks.length > 0 || fecha.length > 0 || operacion.length > 0,
+        monto: monto,
+        fecha: fecha,
+        banco: banco,
+        bancoOtro: bancoOtro,
+        operacion: operacion
+      };
+    }
+
+    // ==========================================
+    // 3. RENDERIZAR INTERFAZ DE UNIDADES
+    // ==========================================
+    function renderUnitsEditor() {
+      const container = document.getElementById('floorsContainer');
+      container.innerHTML = '';
+
+      // Agrupar por pisos
+      const floors = [
+        { name: "Primer Nivel", desc: "Locales Comerciales y Dpto 101", ids: ["loc-503", "loc-501", "dpto-101"] },
+        { name: "Piso 2", desc: "Departamentos 201, 202, 203", ids: ["dpto-201", "dpto-202", "dpto-203"] },
+        { name: "Piso 3", desc: "Departamentos 301, 302, 303", ids: ["dpto-301", "dpto-302", "dpto-303"] },
+        { name: "Piso 4", desc: "Departamentos 401, 402, 403", ids: ["dpto-401", "dpto-402", "dpto-403"] },
+        { name: "Piso 5", desc: "Departamentos 501, 502, 503", ids: ["dpto-501", "dpto-502", "dpto-503"] },
+        { name: "Piso 6", desc: "Departamentos 601 al 607", ids: ["dpto-601", "dpto-602", "dpto-603", "dpto-604", "dpto-605", "dpto-606", "dpto-607"] }
+      ];
+
+      floors.forEach((fl, idx) => {
+        const floorCard = document.createElement('div');
+        floorCard.className = "border border-slate-200 rounded-xl overflow-hidden bg-slate-50/40";
+        
+        let unitsHtml = '';
+        fl.ids.forEach(uId => {
+          const u = unitsData[uId];
+          const isAlquilerOk = u.alquilerPagado;
+          const isAguaOk = u.aguaPagado;
+
+          unitsHtml += `
+            <div data-unit-card="true" data-unit-name="${escapeHtml(u.name)}" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 relative transition hover:border-slate-300">
+              <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                <span class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                  <i data-lucide="${u.id.startsWith('loc') ? 'store' : 'home'}" class="w-4 h-4 text-blue-600"></i>
+                  ${u.name}
+                </span>
+                <div class="flex items-center gap-1.5">
+                  ${(u.alquilerComprobante || u.aguaComprobante) ? `
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1" title="Tiene vouchers adjuntos">
+                      <i data-lucide="receipt" class="w-3 h-3"></i>
+                      ${(u.alquilerComprobante && u.aguaComprobante) ? '2 Vouchers' : '1 Voucher'}
+                    </span>
+                  ` : ''}
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isAlquilerOk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}">
+                    ${isAlquilerOk ? 'Alq. Cobrado' : 'Alq. Pendiente'}
+                  </span>
+                </div>
+              </div>
+
+              <!-- SECCIÓN ALQUILER -->
+              <div class="p-3 rounded-xl border ${isAlquilerOk ? 'bg-slate-50 border-slate-200' : 'bg-rose-50/40 border-rose-200/80'} space-y-2 transition-all">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-xs text-slate-700 flex items-center gap-1.5">
+                    <i data-lucide="key" class="w-3.5 h-3.5 ${isAlquilerOk ? 'text-blue-600' : 'text-slate-400'}"></i>
+                    ALQUILER
+                  </span>
+                  
+                  <!-- Switch Toggle Pagado / Pendiente -->
+                  <label class="inline-flex items-center gap-2 cursor-pointer select-none" title="Cambiar entre Pagado o Pendiente">
+                    <span class="text-[11px] font-bold ${isAlquilerOk ? 'text-emerald-700' : 'text-rose-600'}">${isAlquilerOk ? 'Pagado' : 'Pendiente'}</span>
+                    <input type="checkbox" ${isAlquilerOk ? 'checked' : ''} onchange="togglePaidState('${u.id}', 'alquiler', this.checked)" class="sr-only peer">
+                    <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600 relative"></div>
+                  </label>
+                </div>
+
+                ${isAlquilerOk ? `
+                  <!-- Campos cuando está PAGADO -->
+                  <div class="grid grid-cols-12 gap-2 pt-1">
+                    <div class="${u.alquilerBanco === 'OTRO' ? 'col-span-3 sm:col-span-2' : 'col-span-3'}">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Banco / App</label>
+                      <select onchange="updateBank('${u.id}', 'alquiler', this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-200 rounded-lg font-semibold text-slate-700 focus:ring-1 focus:ring-blue-500 focus:outline-none cursor-pointer">
+                        <option value="BCP" ${u.alquilerBanco === 'BCP' ? 'selected' : ''}>BCP</option>
+                        <option value="BBVA" ${u.alquilerBanco === 'BBVA' ? 'selected' : ''}>BBVA</option>
+                        <option value="INTERBANK" ${u.alquilerBanco === 'INTERBANK' ? 'selected' : ''}>Interbank</option>
+                        <option value="SCOTIABANK" ${u.alquilerBanco === 'SCOTIABANK' ? 'selected' : ''}>Scotiabank</option>
+                        <option value="BANBIF" ${u.alquilerBanco === 'BANBIF' ? 'selected' : ''}>BanBif</option>
+                        <option value="YAPE" ${u.alquilerBanco === 'YAPE' ? 'selected' : ''}>Yape</option>
+                        <option value="PLIN" ${u.alquilerBanco === 'PLIN' ? 'selected' : ''}>Plin</option>
+                        <option value="EFECTIVO" ${u.alquilerBanco === 'EFECTIVO' ? 'selected' : ''}>Efectivo</option>
+                        <option value="OTRO" ${u.alquilerBanco === 'OTRO' ? 'selected' : ''}>Otro / Dividido</option>
+                      </select>
+                    </div>
+
+                    ${u.alquilerBanco === 'OTRO' ? `
+                    <div class="col-span-3 sm:col-span-3">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Detalle</label>
+                      <input type="text" value="${escapeHtml(u.alquilerBancoOtro)}" placeholder="Ej: BCP + Yape" oninput="updateBankOtro('${u.id}', 'alquiler', this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-200 rounded-lg uppercase focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    ` : ''}
+
+                    <div class="${u.alquilerBanco === 'OTRO' ? 'col-span-3 sm:col-span-2' : 'col-span-3'}">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">N° Operación</label>
+                      <input type="text" value="${escapeHtml(u.alquilerOperacion || '')}" placeholder="Ej: 123456" oninput="updateOperation('${u.id}', 'alquiler', this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-200 rounded-lg uppercase font-mono focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <div class="${u.alquilerBanco === 'OTRO' ? 'col-span-3 sm:col-span-3' : 'col-span-3'}">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Fecha</label>
+                      <input type="text" value="${escapeHtml(u.alquilerFecha)}" placeholder="Ej: 30 DE MAYO" oninput="updateDate('${u.id}', 'alquiler', this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-200 rounded-lg uppercase font-mono focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                    </div>
+
+                    <div class="${u.alquilerBanco === 'OTRO' ? 'col-span-12 sm:col-span-2' : 'col-span-3'}">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Monto S/</label>
+                      <div class="relative">
+                        <span class="absolute left-2 top-1.5 text-xs text-slate-400 font-mono font-medium">S/</span>
+                        <input type="number" step="0.01" value="${u.alquilerMonto}" oninput="updateAmount('${u.id}', 'alquiler', parseFloat(this.value) || 0)" class="w-full text-xs p-1.5 pl-6 bg-white border border-slate-200 rounded-lg font-mono font-bold text-slate-900 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Control Voucher Alquiler -->
+                  <div class="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="receipt" class="w-3 h-3 text-blue-600"></i>
+                        Voucher:
+                      </span>
+                      ${u.alquilerComprobante ? `
+                        <div class="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
+                          <img src="${u.alquilerComprobante}" onclick="previewImage('${u.id}', 'alquiler')" class="w-7 h-7 object-cover rounded cursor-pointer border border-emerald-300 hover:scale-105 transition shadow-2xs" title="Clic para ampliar voucher" alt="Voucher Alquiler">
+                          <span class="text-[10px] font-bold text-emerald-800">Adjuntado</span>
+                          <button type="button" onclick="previewImage('${u.id}', 'alquiler')" class="text-[10px] text-blue-600 font-semibold hover:underline px-0.5">Ver</button>
+                          <button type="button" onclick="removeVoucher('${u.id}', 'alquiler')" class="text-slate-400 hover:text-rose-600 p-0.5 transition" title="Eliminar voucher">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                          </button>
+                        </div>
+                      ` : `
+                        <label class="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-600 border border-dashed border-slate-300 hover:border-blue-400 rounded-lg text-[10px] font-semibold transition shadow-2xs">
+                          <i data-lucide="upload" class="w-3 h-3 text-blue-500"></i>
+                          <span>Subir voucher</span>
+                          <input type="file" accept="image/*" class="sr-only" onchange="handleVoucherUpload(event, '${u.id}', 'alquiler')">
+                        </label>
+                      `}
+                    </div>
+                  </div>
+                ` : `
+                  <!-- Vista limpia cuando está PENDIENTE / NO PAGÓ -->
+                  <div class="flex items-center justify-between gap-3 pt-1">
+                    <span class="text-xs font-semibold text-rose-700 bg-rose-100/80 px-2.5 py-1.5 rounded-lg border border-rose-200 flex items-center gap-1.5">
+                      <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-600"></i>
+                      ${escapeHtml(u.alquilerMotivoNoPago || 'NO HA REALIZADO EL PAGO')}
+                    </span>
+                    <div class="w-36">
+                      <div class="relative" title="Monto adeudado (no sumado a recaudación)">
+                        <span class="absolute left-2 top-1.5 text-xs text-rose-400 font-mono font-medium">S/</span>
+                        <input type="number" step="0.01" value="${u.alquilerMonto}" placeholder="0.00" oninput="updateAmount('${u.id}', 'alquiler', parseFloat(this.value) || 0)" class="w-full text-xs p-1.5 pl-6 bg-white border border-rose-300 rounded-lg font-mono font-bold text-rose-700 focus:ring-1 focus:ring-rose-500 focus:outline-none">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-2 pt-1.5 border-t border-rose-100 flex items-center justify-between">
+                    <label class="cursor-pointer inline-flex items-center gap-1 text-[10px] font-semibold text-rose-700 hover:text-rose-900 transition">
+                      <i data-lucide="upload" class="w-3 h-3"></i>
+                      <span>¿Pagó? Subir voucher aquí</span>
+                      <input type="file" accept="image/*" class="sr-only" onchange="handleVoucherUpload(event, '${u.id}', 'alquiler', true)">
+                    </label>
+                  </div>
+                `}
+              </div>
+
+              <!-- SECCIÓN CONSUMO DE AGUA -->
+              <div class="p-3 rounded-xl border ${isAguaOk ? 'bg-slate-50 border-slate-200' : 'bg-sky-50/30 border-sky-200/80'} space-y-2 transition-all">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-xs text-slate-700 flex items-center gap-1.5">
+                    <i data-lucide="droplet" class="w-3.5 h-3.5 ${isAguaOk ? 'text-sky-600' : 'text-slate-400'}"></i>
+                    CONSUMO DE AGUA
+                  </span>
+                  
+                  <label class="inline-flex items-center gap-2 cursor-pointer select-none" title="Cambiar entre Pagado o Pendiente">
+                    <span class="text-[11px] font-bold ${isAguaOk ? 'text-sky-700' : 'text-slate-400'}">${isAguaOk ? 'Pagado' : 'Pendiente'}</span>
+                    <input type="checkbox" ${isAguaOk ? 'checked' : ''} onchange="togglePaidState('${u.id}', 'agua', this.checked)" class="sr-only peer">
+                    <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-600 relative"></div>
+                  </label>
+                </div>
+
+                ${isAguaOk ? `
+                  <!-- Campos cuando agua está PAGADA -->
+                  <div class="grid grid-cols-12 gap-2 pt-1">
+                    <div class="${u.aguaBanco === 'OTRO' ? 'col-span-3 sm:col-span-2' : 'col-span-3'}">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Medio / App</label>
+                      <select onchange="updateBank('${u.id}', 'agua', this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-200 rounded-lg font-semibold text-slate-700 focus:ring-1 focus:ring-sky-500 focus:outline-none cursor-pointer">
+                        <option value="PLIN" ${u.aguaBanco === 'PLIN' ? 'selected' : ''}>Plin</option>
+                        <option value="YAPE" ${u.aguaBanco === 'YAPE' ? 'selected' : ''}>Yape</option>
+                        <option value="BCP" ${u.aguaBanco === 'BCP' ? 'selected' : ''}>BCP</option>
+                        <option value="BBVA" ${u.aguaBanco === 'BBVA' ? 'selected' : ''}>BBVA</option>
+                        <option value="INTERBANK" ${u.aguaBanco === 'INTERBANK' ? 'selected' : ''}>Interbank</option>
+                        <option value="SCOTIABANK" ${u.aguaBanco === 'SCOTIABANK' ? 'selected' : ''}>Scotiabank</option>
+                        <option value="EFECTIVO" ${u.aguaBanco === 'EFECTIVO' ? 'selected' : ''}>Efectivo</option>
+                        <option value="OTRO" ${u.aguaBanco === 'OTRO' ? 'selected' : ''}>Otro / Dividido</option>
+                      </select>
+                    </div>
+
+                    ${u.aguaBanco === 'OTRO' ? `
+                    <div class="col-span-3 sm:col-span-3">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Detalle</label>
+                      <input type="text" value="${escapeHtml(u.aguaBancoOtro)}" placeholder="Ej: Plin + Yape" oninput="updateBankOtro('${u.id}', 'agua', this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-200 rounded-lg uppercase focus:ring-1 focus:ring-sky-500 focus:outline-none">
+                    </div>
+                    ` : ''}
+
+                    <div class="${u.aguaBanco === 'OTRO' ? 'col-span-3 sm:col-span-2' : 'col-span-3'}">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">N° Operación</label>
+                      <input type="text" value="${escapeHtml(u.aguaOperacion || '')}" placeholder="Ej: 987654" oninput="updateOperation('${u.id}', 'agua', this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-200 rounded-lg uppercase font-mono focus:ring-1 focus:ring-sky-500 focus:outline-none">
+                    </div>
+
+                    <div class="${u.aguaBanco === 'OTRO' ? 'col-span-3 sm:col-span-3' : 'col-span-3'}">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Fecha</label>
+                      <input type="text" value="${escapeHtml(u.aguaFecha)}" placeholder="Ej: 30 DE JUNIO" oninput="updateDate('${u.id}', 'agua', this.value)" class="w-full text-xs p-1.5 bg-white border border-slate-200 rounded-lg uppercase font-mono focus:ring-1 focus:ring-sky-500 focus:outline-none">
+                    </div>
+
+                    <div class="${u.aguaBanco === 'OTRO' ? 'col-span-12 sm:col-span-2' : 'col-span-3'}">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Monto S/</label>
+                      <div class="relative">
+                        <span class="absolute left-2 top-1.5 text-xs text-slate-400 font-mono font-medium">S/</span>
+                        <input type="number" step="0.01" value="${u.aguaMonto}" oninput="updateAmount('${u.id}', 'agua', parseFloat(this.value) || 0)" class="w-full text-xs p-1.5 pl-6 bg-white border border-slate-200 rounded-lg font-mono font-bold text-slate-900 focus:ring-1 focus:ring-sky-500 focus:outline-none">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Control Voucher Agua -->
+                  <div class="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="receipt" class="w-3 h-3 text-sky-600"></i>
+                        Voucher:
+                      </span>
+                      ${u.aguaComprobante ? `
+                        <div class="inline-flex items-center gap-1.5 bg-sky-50 border border-sky-200 px-2 py-1 rounded-lg">
+                          <img src="${u.aguaComprobante}" onclick="previewImage('${u.id}', 'agua')" class="w-7 h-7 object-cover rounded cursor-pointer border border-sky-300 hover:scale-105 transition shadow-2xs" title="Clic para ampliar voucher" alt="Voucher Agua">
+                          <span class="text-[10px] font-bold text-sky-800">Adjuntado</span>
+                          <button type="button" onclick="previewImage('${u.id}', 'agua')" class="text-[10px] text-blue-600 font-semibold hover:underline px-0.5">Ver</button>
+                          <button type="button" onclick="removeVoucher('${u.id}', 'agua')" class="text-slate-400 hover:text-rose-600 p-0.5 transition" title="Eliminar voucher">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                          </button>
+                        </div>
+                      ` : `
+                        <label class="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-600 border border-dashed border-slate-300 hover:border-sky-400 rounded-lg text-[10px] font-semibold transition shadow-2xs">
+                          <i data-lucide="upload" class="w-3 h-3 text-sky-500"></i>
+                          <span>Subir voucher</span>
+                          <input type="file" accept="image/*" class="sr-only" onchange="handleVoucherUpload(event, '${u.id}', 'agua')">
+                        </label>
+                      `}
+                    </div>
+                  </div>
+                ` : `
+                  <div class="flex items-center justify-between gap-3 pt-1">
+                    <span class="text-xs font-semibold text-sky-800 bg-sky-100/70 px-2.5 py-1.5 rounded-lg border border-sky-200 flex items-center gap-1.5">
+                      <i data-lucide="clock" class="w-3.5 h-3.5 text-sky-600"></i>
+                      ${escapeHtml(u.aguaMotivoNoPago || 'NO REPORTADO / PENDIENTE')}
+                    </span>
+                    <div class="w-36">
+                      <div class="relative" title="Monto de agua adeudado">
+                        <span class="absolute left-2 top-1.5 text-xs text-sky-400 font-mono font-medium">S/</span>
+                        <input type="number" step="0.01" value="${u.aguaMonto}" placeholder="0.00" oninput="updateAmount('${u.id}', 'agua', parseFloat(this.value) || 0)" class="w-full text-xs p-1.5 pl-6 bg-white border border-sky-200 rounded-lg font-mono font-bold text-sky-700 focus:ring-1 focus:ring-sky-500 focus:outline-none">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-2 pt-1.5 border-t border-sky-100 flex items-center justify-between">
+                    <label class="cursor-pointer inline-flex items-center gap-1 text-[10px] font-semibold text-sky-700 hover:text-sky-900 transition">
+                      <i data-lucide="upload" class="w-3 h-3"></i>
+                      <span>¿Pagó? Subir voucher aquí</span>
+                      <input type="file" accept="image/*" class="sr-only" onchange="handleVoucherUpload(event, '${u.id}', 'agua', true)">
+                    </label>
+                  </div>
+                `}
+              </div>
+
+            </div>
+          `;
+        });
+
+        floorCard.innerHTML = `
+          <div class="p-3 bg-slate-100/90 border-b border-slate-200 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-[#5CE1E6] text-slate-950 flex items-center justify-center font-extrabold text-xs shadow-sm">${idx + 1}</span>
+              <h4 class="font-bold text-slate-800 text-sm">${fl.name}</h4>
+              <span class="text-xs text-slate-500 font-medium">(${fl.desc})</span>
+            </div>
+          </div>
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${unitsHtml}
+          </div>
+        `;
+
+        container.appendChild(floorCard);
+      });
+
+      lucide.createIcons();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // ==========================================
+    // 4. ACTUALIZACIÓN Y RECÁLCULO EN VIVO
+    // ==========================================
+    function togglePaidState(unitId, type, isChecked) {
+      if (!unitsData[unitId]) return;
+      if (type === 'alquiler') {
+        unitsData[unitId].alquilerPagado = isChecked;
+        if (!isChecked) {
+          unitsData[unitId].alquilerMotivoNoPago = "NO HA REALIZADO EL PAGO";
+        }
+      } else {
+        unitsData[unitId].aguaPagado = isChecked;
+        if (!isChecked) {
+          unitsData[unitId].aguaMotivoNoPago = "NO REPORTADO / PENDIENTE";
+        }
+      }
+      renderUnitsEditor();
+      updateOutputs();
+    }
+
+    function updateBank(unitId, type, value) {
+      if (!unitsData[unitId]) return;
+      if (type === 'alquiler') {
+        unitsData[unitId].alquilerBanco = value;
+      } else {
+        unitsData[unitId].aguaBanco = value;
+      }
+      renderUnitsEditor();
+      updateOutputs();
+    }
+
+    function updateBankOtro(unitId, type, value) {
+      if (!unitsData[unitId]) return;
+      if (type === 'alquiler') {
+        unitsData[unitId].alquilerBancoOtro = value;
+      } else {
+        unitsData[unitId].aguaBancoOtro = value;
+      }
+      updateOutputs();
+    }
+
+    function updateOperation(unitId, type, value) {
+      if (!unitsData[unitId]) return;
+      if (type === 'alquiler') {
+        unitsData[unitId].alquilerOperacion = value;
+      } else {
+        unitsData[unitId].aguaOperacion = value;
+      }
+      updateOutputs();
+    }
+
+    function updateDate(unitId, type, value) {
+      if (!unitsData[unitId]) return;
+      if (type === 'alquiler') {
+        unitsData[unitId].alquilerFecha = value;
+      } else {
+        unitsData[unitId].aguaFecha = value;
+      }
+      updateOutputs();
+    }
+
+    function updateAmount(unitId, type, value) {
+      if (!unitsData[unitId]) return;
+      if (type === 'alquiler') {
+        unitsData[unitId].alquilerMonto = value;
+      } else {
+        unitsData[unitId].aguaMonto = value;
+      }
+      updateOutputs();
+    }
+
+    // ==========================================
+    // 4.1 GESTIÓN DE COMPROBANTES / VOUCHERS
+    // ==========================================
+    function handleVoucherUpload(event, unitId, type, autoMarkPaid = false) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast("Por favor selecciona una imagen válida (JPG, PNG, WEBP).", "alert");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const maxDim = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+          if (type === 'alquiler') {
+            unitsData[unitId].alquilerComprobante = compressedDataUrl;
+            if (autoMarkPaid) {
+              unitsData[unitId].alquilerPagado = true;
+            }
+          } else {
+            unitsData[unitId].aguaComprobante = compressedDataUrl;
+            if (autoMarkPaid) {
+              unitsData[unitId].aguaPagado = true;
+            }
+          }
+
+          renderUnitsEditor();
+          updateOutputs();
+          showToast("Comprobante adjuntado con éxito", "check");
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeVoucher(unitId, type) {
+      if (!unitsData[unitId]) return;
+      if (confirm("¿Deseas eliminar este comprobante?")) {
+        if (type === 'alquiler') {
+          unitsData[unitId].alquilerComprobante = "";
+        } else {
+          unitsData[unitId].aguaComprobante = "";
+        }
+        renderUnitsEditor();
+        updateOutputs();
+        showToast("Comprobante eliminado", "check");
+      }
+    }
+
+    function previewImage(unitId, type) {
+      const u = unitsData[unitId];
+      if (!u) return;
+      const src = type === 'alquiler' ? u.alquilerComprobante : u.aguaComprobante;
+      if (!src) return;
+
+      const concept = type === 'alquiler' ? 'Alquiler' : 'Consumo de Agua';
+      const op = type === 'alquiler' ? getAlquilerOperacionText(u) : getAguaOperacionText(u);
+      const amount = type === 'alquiler' ? u.alquilerMonto : u.aguaMonto;
+
+      document.getElementById('modalPreviewImg').src = src;
+      document.getElementById('modalPreviewTitle').innerText = `${u.name} • Comprobante de ${concept}`;
+      document.getElementById('modalPreviewSubtitle').innerText = `Monto: S/ ${amount.toFixed(2)} | N° Operación: ${op}`;
+
+      const modal = document.getElementById('imagePreviewModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closeImagePreview() {
+      const modal = document.getElementById('imagePreviewModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function updateOutputs() {
+      let totalAlquilerCobrado = 0.00;
+      let totalAguaCobrada = 0.00;
+      let totalDeuda = 0.00;
+      const pendientesAlquiler = [];
+      const pendientesAgua = [];
+
+      let outputLines = [];
+
+      UNIT_DEFINITIONS.forEach(def => {
+        const u = unitsData[def.id];
+        
+        // Sumatorias (regla acordada: SOLO montos efectivamente cobrados)
+        if (u.alquilerPagado) {
+          totalAlquilerCobrado += u.alquilerMonto;
+        } else {
+          pendientesAlquiler.push(u.name);
+          totalDeuda += u.alquilerMonto;
+        }
+
+        if (u.aguaPagado) {
+          totalAguaCobrada += u.aguaMonto;
+        } else {
+          pendientesAgua.push(u.name);
+        }
+
+        // Construcción de la ficha en el formato estricto oficial
+        outputLines.push(u.name);
+        outputLines.push(`ALQUILER - Fecha y Banco: ${getAlquilerFechaBancoText(u)}`);
+        outputLines.push(`ALQUILER - N° Operación: ${getAlquilerOperacionText(u)}`);
+        outputLines.push(`ALQUILER - Monto: S/${u.alquilerMonto.toFixed(2)}`);
+        outputLines.push(`AGUA - Fecha y Banco: ${getAguaFechaBancoText(u)}`);
+        outputLines.push(`AGUA - N° Operación: ${getAguaOperacionText(u)}`);
+        outputLines.push(`AGUA - Monto: S/${u.aguaMonto.toFixed(2)}`);
+        outputLines.push(""); // Línea en blanco entre unidades
+      });
+
+      // Sección de Cierre y Resumen
+      outputLines.push("RESUMEN DEL MES");
+      outputLines.push(`MONTO TOTAL DE PAGOS DE ARRENDAMIENTOS: S/${formatCurrency(totalAlquilerCobrado)}`);
+      outputLines.push(`MONTO TOTAL DE CONSUMO DE AGUA: S/${formatCurrency(totalAguaCobrada)}`);
+      outputLines.push("");
+      outputLines.push("PENDIENTES / EN MORA:");
+      outputLines.push(`- Alquiler: ${pendientesAlquiler.length > 0 ? pendientesAlquiler.join(', ') : 'Ninguno'}`);
+      outputLines.push(`- Agua: ${pendientesAgua.length > 0 ? pendientesAgua.join(', ') : 'Ninguno'}`);
+
+      // Escribir al textarea oficial
+      document.getElementById('officialOutput').value = outputLines.join("\n");
+
+      // Actualizar tarjetas de métricas
+      document.getElementById('statTotalAlquiler').innerText = `S/ ${formatCurrency(totalAlquilerCobrado)}`;
+      document.getElementById('statTotalAgua').innerText = `S/ ${formatCurrency(totalAguaCobrada)}`;
+      document.getElementById('statPendientesCount').innerText = `${pendientesAlquiler.length} unidades`;
+      document.getElementById('statDeudaMonto').innerText = `Deuda: S/ ${formatCurrency(totalDeuda)}`;
+
+      // Actualizar banner final
+      const elFinalAlq = document.getElementById('finalStatAlquiler');
+      const elFinalAgua = document.getElementById('finalStatAgua');
+      const elFinalPend = document.getElementById('finalStatPendientes');
+      if (elFinalAlq) elFinalAlq.innerText = `S/ ${formatCurrency(totalAlquilerCobrado)}`;
+      if (elFinalAgua) elFinalAgua.innerText = `S/ ${formatCurrency(totalAguaCobrada)}`;
+      if (elFinalPend) {
+        elFinalPend.innerText = pendientesAlquiler.length > 0 ? pendientesAlquiler.join(', ') : 'Ninguno';
+      }
+
+      // Guardar automáticamente en localStorage
+      saveToStorage();
+    }
+
+    function formatCurrency(num) {
+      return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // ==========================================
+    // 5. ACCIONES DE USUARIO Y COPIADO
+    // ==========================================
+    function processRawText() {
+      const text = document.getElementById('rawInput').value;
+      if (!text.trim()) {
+        showToast("Por favor pega primero un reporte en bruto.", "alert");
+        return;
+      }
+      parseRawReport(text);
+      showToast("¡Reporte procesado y estructurado con éxito!", "check");
+    }
+
+    function clearRawText() {
+      if (confirm("¿Deseas limpiar el texto en bruto y reiniciar el reporte?")) {
+        document.getElementById('rawInput').value = "";
+        initUnitsData();
+        renderUnitsEditor();
+        updateOutputs();
+        showToast("Formulario reiniciado", "check");
+      }
+    }
+
+    function copyOfficialText() {
+      const output = document.getElementById('officialOutput');
+      if (!output.value.trim()) {
+        showToast("No hay datos para copiar. Procesa primero un reporte.", "alert");
+        return;
+      }
+
+      navigator.clipboard.writeText(output.value).then(() => {
+        showToast("¡Copiado al portapapeles listo para tu reporte oficial!", "check");
+        const btnText = document.getElementById('copyBtnText');
+        const orig = btnText.innerText;
+        btnText.innerText = "¡Copiado con Éxito!";
+        setTimeout(() => {
+          btnText.innerText = orig;
+        }, 2500);
+      }).catch(err => {
+        output.select();
+        document.execCommand('copy');
+        showToast("Texto copiado al portapapeles", "check");
+      });
+    }
+
+    function downloadAsText() {
+      const text = document.getElementById('officialOutput').value;
+      const month = document.getElementById('reportMonth').value.replace(/\s+/g, '_');
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Reporte_Oficial_Multifamiliar_El_Alamo_${month}.txt`;
+      a.click();
+      showToast("Archivo .txt descargado", "check");
+    }
+
+    function exportToCSV() {
+      const month = document.getElementById('reportMonth').value;
+      let csvContent = "\uFEFF"; // UTF-8 BOM para que Excel en español reconozca tildes y caracteres
+      csvContent += "MULTIFAMILIAR EL ÁLAMO - REPORTE MENSUAL\n";
+      csvContent += `Mes:;${month}\n\n`;
+      csvContent += "Piso / Nivel;Unidad;Alquiler - Fecha y Banco;Alquiler - N° Operación;Alquiler - Monto (S/);Alquiler Estado;Agua - Fecha y Banco;Agua - N° Operación;Agua - Monto (S/);Agua Estado\n";
+
+      let totalAlq = 0;
+      let totalAgua = 0;
+
+      UNIT_DEFINITIONS.forEach(def => {
+        const u = unitsData[def.id];
+        if (u.alquilerPagado) totalAlq += u.alquilerMonto;
+        if (u.aguaPagado) totalAgua += u.aguaMonto;
+
+        const row = [
+          `"${u.floor}"`,
+          `"${u.name}"`,
+          `"${getAlquilerFechaBancoText(u).replace(/"/g, '""')}"`,
+          `"${getAlquilerOperacionText(u).replace(/"/g, '""')}"`,
+          u.alquilerMonto.toFixed(2),
+          u.alquilerPagado ? "COBRADO" : "PENDIENTE",
+          `"${getAguaFechaBancoText(u).replace(/"/g, '""')}"`,
+          `"${getAguaOperacionText(u).replace(/"/g, '""')}"`,
+          u.aguaMonto.toFixed(2),
+          u.aguaPagado ? "COBRADO" : "PENDIENTE"
+        ];
+        csvContent += row.join(";") + "\n";
+      });
+
+      csvContent += `\n;;;TOTAL ARRENDAMIENTOS COBRADOS:;${totalAlq.toFixed(2)};;;;;\n`;
+      csvContent += `;;;;TOTAL CONSUMO DE AGUA COBRADO:;;;${totalAgua.toFixed(2)};;\n`;
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Reporte_El_Alamo_${month.replace(/\s+/g, '_')}.csv`;
+      a.click();
+      showToast("Reporte Excel/CSV descargado con éxito", "check");
+    }
+
+    // ==========================================
+    // GENERACIÓN Y DESCARGA DE PDF PROFESIONAL
+    // ==========================================
+    function downloadAsPDF() {
+      const month = (document.getElementById('reportMonth').value || 'REPORTE').trim().toUpperCase();
+
+      // Recalcular montos consolidados
+      let totalAlqCobrado = 0.00;
+      let totalAguaCobrado = 0.00;
+      let totalDeudaAlq = 0.00;
+      const pendientesAlq = [];
+      const pendientesAgua = [];
+
+      UNIT_DEFINITIONS.forEach(def => {
+        const u = unitsData[def.id];
+        if (u.alquilerPagado) {
+          totalAlqCobrado += u.alquilerMonto;
+        } else {
+          totalDeudaAlq += u.alquilerMonto;
+          pendientesAlq.push(u.name);
+        }
+
+        if (u.aguaPagado) {
+          totalAguaCobrado += u.aguaMonto;
+        } else {
+          pendientesAgua.push(u.name);
+        }
+      });
+
+      // Si jsPDF está disponible mediante CDN
+      if (window.jspdf && window.jspdf.jsPDF) {
+        try {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+          });
+
+          const primaryColor = [30, 41, 59];    // Slate 800
+          const accentColor = [37, 99, 235];    // Blue 600
+
+          // 1. Membrete Superior (#5CE1E6)
+          doc.setFillColor(92, 225, 230); // #5CE1E6 (Turquesa / Aqua)
+          doc.rect(0, 0, 210, 24, 'F');
+
+          doc.setTextColor(15, 23, 42); // #0F172A (Texto oscuro para alta legibilidad)
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text('MULTIFAMILIAR EL ÁLAMO', 12, 11);
+
+          doc.setFontSize(8.5);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(30, 41, 59); // Slate 800
+          doc.text('REPORTE OFICIAL DE RECAUDACIÓN Y CONTROL DE COBRANZAS', 12, 18);
+
+          // Mes y Fecha a la derecha
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(15, 23, 42); // #0F172A
+          doc.text(`MES: ${month}`, 198, 11, { align: 'right' });
+
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(30, 41, 59); // Slate 800
+          doc.text(`Generado: ${new Date().toLocaleDateString('es-PE')} ${new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`, 198, 17, { align: 'right' });
+
+          // 2. Filas de las 22 unidades
+          const tableRows = [];
+          UNIT_DEFINITIONS.forEach((def, idx) => {
+            const u = unitsData[def.id];
+            const estadoAlq = u.alquilerPagado ? 'COBRADO' : 'PENDIENTE';
+            tableRows.push([
+              (idx + 1).toString(),
+              u.name,
+              getAlquilerFechaBancoText(u),
+              getAlquilerOperacionText(u),
+              `S/ ${u.alquilerMonto.toFixed(2)}`,
+              getAguaFechaBancoText(u),
+              getAguaOperacionText(u),
+              `S/ ${u.aguaMonto.toFixed(2)}`,
+              estadoAlq
+            ]);
+          });
+
+          // 3. Renderizar Tabla Oficial con AutoTable
+          doc.autoTable({
+            startY: 28,
+            head: [['N°', 'Inmueble / Unidad', 'Alquiler - Banco / Fecha', 'N° Op. Alq.', 'Alquiler S/', 'Agua - Medio / Fecha', 'N° Op. Agua', 'Agua S/', 'Estado']],
+            body: tableRows,
+            theme: 'grid',
+            headStyles: {
+              fillColor: [31, 41, 59],   // #1F293B (Color oscuro original)
+              textColor: [255, 255, 255], // Texto blanco
+              fontStyle: 'bold',
+              fontSize: 6.8,
+              halign: 'center',
+              cellPadding: 1.8,
+              lineColor: [51, 65, 85],
+              lineWidth: 0.1
+            },
+            bodyStyles: {
+              fontSize: 6.5,
+              textColor: [30, 41, 59],
+              cellPadding: 1.5
+            },
+            columnStyles: {
+              0: { halign: 'center', cellWidth: 7 },
+              1: { fontStyle: 'bold', cellWidth: 35 },
+              2: { cellWidth: 34 },
+              3: { halign: 'center', fontStyle: 'bold', cellWidth: 20 },
+              4: { halign: 'right', fontStyle: 'bold', cellWidth: 18 },
+              5: { cellWidth: 33 },
+              6: { halign: 'center', fontStyle: 'bold', cellWidth: 18 },
+              7: { halign: 'right', fontStyle: 'bold', cellWidth: 15 },
+              8: { halign: 'center', cellWidth: 16 }
+            },
+            alternateRowStyles: {
+              fillColor: [248, 250, 252]
+            },
+            didParseCell: function(data) {
+              if (data.section === 'body') {
+                const u = unitsData[UNIT_DEFINITIONS[data.row.index].id];
+                if (!u.alquilerPagado) {
+                  if (data.column.index === 8) {
+                    data.cell.styles.textColor = [225, 29, 72];
+                    data.cell.styles.fontStyle = 'bold';
+                  }
+                  if (data.column.index === 2 || data.column.index === 3) {
+                    data.cell.styles.textColor = [225, 29, 72];
+                  }
+                }
+                if (!u.aguaPagado) {
+                  if (data.column.index === 5 || data.column.index === 6) {
+                    data.cell.styles.textColor = [225, 29, 72];
+                  }
+                }
+              }
+            },
+            margin: { left: 7, right: 7 }
+          });
+
+          // 4. Resumen Final al pie de la tabla
+          let summaryY = doc.lastAutoTable.finalY + 5;
+          if (summaryY > 238) {
+            doc.addPage();
+            summaryY = 15;
+          }
+
+          // Recuadro de Totales
+          doc.setFillColor(240, 253, 254);
+          doc.setDrawColor(92, 225, 230);
+          doc.roundedRect(7, summaryY, 196, 38, 3, 3, 'FD');
+
+          // Título del resumen
+          doc.setFontSize(9.5);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(15, 23, 42);
+          doc.text('RESUMEN OFICIAL DEL MES', 14, summaryY + 7);
+
+          doc.setDrawColor(226, 232, 240);
+          doc.line(14, summaryY + 9, 195, summaryY + 9);
+
+          // Cifras Claves
+          doc.setFontSize(8.5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text('MONTO TOTAL DE PAGOS DE ARRENDAMIENTOS:', 14, summaryY + 16);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(16, 185, 129); // Verde
+          doc.text(`S/ ${formatCurrency(totalAlqCobrado)}`, 110, summaryY + 16);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text('MONTO TOTAL DE CONSUMO DE AGUA:', 14, summaryY + 23);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(2, 132, 199); // Azul celeste
+          doc.text(`S/ ${formatCurrency(totalAguaCobrado)}`, 110, summaryY + 23);
+
+          // Pendientes en Mora
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(100, 116, 139);
+          doc.text('Alquileres Pendientes / En Mora:', 14, summaryY + 30);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(pendientesAlq.length > 0 ? 225 : 71, pendientesAlq.length > 0 ? 29 : 85, pendientesAlq.length > 0 ? 72 : 105);
+          const pendText = pendientesAlq.length > 0 ? pendientesAlq.join(', ') : 'Ninguno (100% Cobrado)';
+          doc.text(pendText.length > 60 ? pendText.substring(0, 58) + '...' : pendText, 66, summaryY + 30);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(100, 116, 139);
+          doc.text('Agua Pendiente:', 14, summaryY + 35);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(71, 85, 105);
+          doc.text(pendientesAgua.length > 0 ? pendientesAgua.join(', ') : 'Ninguno', 40, summaryY + 35);
+
+          // 5. ANEXO DE COMPROBANTES DE PAGO (Vouchers en cuadrícula 2x2, 4 por página)
+          const vouchersList = [];
+          UNIT_DEFINITIONS.forEach(def => {
+            const u = unitsData[def.id];
+            if (u.alquilerComprobante) {
+              vouchersList.push({
+                unitName: u.name,
+                concept: "Alquiler",
+                monto: u.alquilerMonto,
+                operacion: getAlquilerOperacionText(u),
+                bancoFecha: getAlquilerFechaBancoText(u),
+                imageData: u.alquilerComprobante
+              });
+            }
+            if (u.aguaComprobante) {
+              vouchersList.push({
+                unitName: u.name,
+                concept: "Consumo de Agua",
+                monto: u.aguaMonto,
+                operacion: getAguaOperacionText(u),
+                bancoFecha: getAguaFechaBancoText(u),
+                imageData: u.aguaComprobante
+              });
+            }
+          });
+
+          if (vouchersList.length > 0) {
+            for (let i = 0; i < vouchersList.length; i++) {
+              const v = vouchersList[i];
+              const posInPage = i % 4;
+
+              // Nueva página al inicio de cada grupo de 4
+              if (posInPage === 0) {
+                doc.addPage();
+
+                // Cabecera superior del anexo (#5CE1E6)
+                doc.setFillColor(92, 225, 230);
+                doc.rect(0, 0, 210, 20, 'F');
+
+                doc.setTextColor(15, 23, 42);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('MULTIFAMILIAR EL ÁLAMO • ANEXO DE COMPROBANTES DE PAGO', 12, 9);
+
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(30, 41, 59);
+                doc.text(`MES: ${month}  |  Evidencias de pago registradas (${vouchersList.length} en total)`, 12, 15);
+              }
+
+              // Posiciones en la cuadrícula 2x2
+              const col = posInPage % 2;
+              const row = Math.floor(posInPage / 2);
+
+              const cardX = col === 0 ? 10 : 109;
+              const cardY = row === 0 ? 25 : 156;
+              const cardW = 91;
+              const cardH = 124;
+
+              // Tarjeta contenedora
+              doc.setFillColor(248, 250, 252);
+              doc.setDrawColor(203, 213, 225);
+              doc.setLineWidth(0.2);
+              doc.roundedRect(cardX, cardY, cardW, cardH, 2, 2, 'FD');
+
+              // Barra de cabecera de la tarjeta (#1F293B)
+              doc.setFillColor(31, 41, 59);
+              doc.rect(cardX, cardY, cardW, 14, 'F');
+
+              // Textos de la tarjeta
+              doc.setTextColor(255, 255, 255);
+              doc.setFontSize(7.5);
+              doc.setFont('helvetica', 'bold');
+              doc.text(`${v.unitName} • ${v.concept.toUpperCase()}`, cardX + 3, cardY + 5.5);
+
+              doc.setFontSize(6.5);
+              doc.setTextColor(92, 225, 230);
+              doc.text(`S/ ${v.monto.toFixed(2)}  |  N° Op: ${v.operacion}`, cardX + 3, cardY + 10.5);
+
+              doc.setFont('helvetica', 'normal');
+              doc.setTextColor(203, 213, 225);
+              const bfClean = v.bancoFecha.length > 24 ? v.bancoFecha.substring(0, 22) + '...' : v.bancoFecha;
+              doc.text(bfClean, cardX + cardW - 3, cardY + 10.5, { align: 'right' });
+
+              // Incrustar imagen escalada proporcionalmente (área 85mm x 105mm)
+              const maxImgW = 85;
+              const maxImgH = 105;
+              const areaX = cardX + 3;
+              const areaY = cardY + 16;
+
+              try {
+                const imgProps = doc.getImageProperties(v.imageData);
+                const imgRatio = imgProps.width / imgProps.height;
+                const boxRatio = maxImgW / maxImgH;
+
+                let drawW = maxImgW;
+                let drawH = maxImgH;
+
+                if (imgRatio > boxRatio) {
+                  drawW = maxImgW;
+                  drawH = maxImgW / imgRatio;
+                } else {
+                  drawH = maxImgH;
+                  drawW = maxImgH * imgRatio;
+                }
+
+                const drawX = areaX + (maxImgW - drawW) / 2;
+                const drawY = areaY + (maxImgH - drawH) / 2;
+
+                doc.addImage(v.imageData, 'JPEG', drawX, drawY, drawW, drawH, undefined, 'FAST');
+              } catch (imgErr) {
+                console.error("Error al incrustar voucher:", imgErr);
+                doc.setFontSize(7.5);
+                doc.setTextColor(148, 163, 184);
+                doc.text("Imagen no disponible", cardX + cardW / 2, cardY + 65, { align: 'center' });
+              }
+            }
+          }
+
+          // 6. Pie de página en todas las páginas (resumen + anexo)
+          const pageCount = doc.internal.getNumberOfPages();
+          for (let p = 1; p <= pageCount; p++) {
+            doc.setPage(p);
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(148, 163, 184);
+            doc.text(`Multifamiliar El Álamo • Control Interno Administrativo • Página ${p} de ${pageCount}`, 105, 292, { align: 'center' });
+          }
+
+          // Guardar y descargar el PDF
+          const cleanMonth = month.replace(/[^a-zA-Z0-9_-]/g, '_');
+          doc.save(`Reporte_Oficial_Multifamiliar_El_Alamo_${cleanMonth}.pdf`);
+          showToast("¡PDF descargado con éxito!", "check");
+          return;
+        } catch (err) {
+          console.error("Error al generar PDF con jsPDF:", err);
+          // Continúa al fallback
+        }
+      }
+
+      // Fallback si no hay soporte de jsPDF o si ocurre un fallo
+      fallbackPrintPDF();
+    }
+
+    // Fallback de impresión directa / Guardar como PDF
+    function fallbackPrintPDF() {
+      const month = document.getElementById('reportMonth').value || 'REPORTE';
+      const outputText = document.getElementById('officialOutput').value;
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Reporte Oficial - Multifamiliar El Álamo - ${month}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 25px; color: #1e293b; }
+            h1 { font-size: 18px; margin: 0 0 4px 0; color: #0f172a; }
+            h2 { font-size: 12px; margin: 0 0 16px 0; color: #64748b; font-weight: normal; }
+            pre { font-family: "Courier New", Courier, monospace; font-size: 11px; white-space: pre-wrap; line-height: 1.45; border: 1px solid #cbd5e1; padding: 15px; background: #f8fafc; border-radius: 6px; }
+            @media print {
+              body { padding: 0; }
+              pre { border: none; background: transparent; padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>MULTIFAMILIAR EL ÁLAMO - REPORTE OFICIAL</h1>
+          <h2>Mes: ${month} • Fecha de Emisión: ${new Date().toLocaleDateString('es-PE')}</h2>
+          <pre>${escapeHtml(outputText)}</pre>
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      showToast("Ventana de impresión abierta para guardar en PDF", "check");
+    }
+
+    function showToast(msg, type = "check") {
+      const toast = document.getElementById('toastNotification');
+      const msgElem = document.getElementById('toastMessage');
+      msgElem.innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+
+    function filterUnits(term) {
+      const q = term.toLowerCase().trim();
+      const cards = document.querySelectorAll('[data-unit-card]');
+      cards.forEach(card => {
+        const name = card.getAttribute('data-unit-name').toLowerCase();
+        if (!q || name.includes(q)) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function expandAllFloors(expand) {
+      // Función para colapsar o expandir si se agregan acordeones
+    }
+
+    // ==========================================
+    // 6. DATOS DE EJEMPLO DE PRUEBA REALISTA
+    // ==========================================
+    function loadSampleData() {
+      const sample = `Reporte Pagos Mensual - Multifamiliar El Álamo (Junio):
+
+- Local 503 Panadería: Alquiler 1500 soles pagado el 02 de junio por BCP op: 839201. Agua 85.50 pagado el 28 de junio BCP operacion 110492.
+- Local 501 Clínica Dental: Alquiler S/ 1800 el 01 de junio BCP nro 493021. Agua 62.10 el 25 de junio Yape op 773821.
+- Dpto 101: Alquiler 850 pagado el 05 de junio BCP cod 948201. Agua 28.40 el 20 de junio Plin op 302918.
+
+Piso 2:
+- Dpto 201: Alquiler 900 pagado el 03 de junio Interbank op 201948. Agua 35.10 el 18 de junio Plin op 493021.
+- Dpto 202: 30 de mayo pagó 950 todo junio por BCP op 849302. Agua 39.12 el 30 de junio por Plin op 583920.
+- Dpto 203: Alquiler 920 el 04 de junio BBVA op 482019. Agua 32.80 el 22 de junio Yape op 392019.
+
+Piso 3:
+- Dpto 301: Alquiler 980 el 07 de junio BCP op 772910. Agua 31.00 el 21 de junio Plin op 992019.
+- Dpto 302: Alquiler 1000 el 10 de junio BCP op 662019. Agua 34.92 el 19 de junio Plin op 883920.
+- Dpto 303: Alquiler 950 el 08 de junio BCP op 551029. Agua 29.50 el 23 de junio Yape op 441029.
+
+Piso 4:
+- Dpto 401: Alquiler 900 el 05 de junio BCP op 331029. Agua 33.20 el 20 de junio Plin op 221029.
+- Dpto 402: Alquiler 920 el 06 de junio Interbank op 119201. Agua 30.15 el 22 de junio Plin op 881920.
+- Dpto 403: Alquiler 880 el 09 de junio BBVA op 771920. Agua 28.90 el 24 de junio Yape op 661920.
+
+Piso 5:
+- Dpto 501: Alquiler 900 el 04 de junio BCP op 551920. Agua 31.20 el 20 de junio Plin op 441920.
+- Dpto 502: Alquiler 850 el 07 de junio BBVA op 331920. Agua 27.50 el 25 de junio Yape op 221920.
+- Dpto 503: Alquiler 880 el 08 de junio Interbank op 118291. Agua 30.00 el 23 de junio Plin op 998291.
+
+Piso 6:
+- Dpto 601: Alquiler 450 el 05 de junio BCP op 888291. Agua 8.50 el 18 de junio Yape op 777291.
+- Dpto 602: Alquiler 450 el 06 de junio Yape op 666291. Agua 9.10 el 19 de junio Yape op 555291.
+- Dpto 603: No ha realizado el pago de alquiler (monto S/ 450.00). Agua 7.72 el 18 de junio Yape op 444291.
+- Dpto 604: Alquiler 460 el 07 de junio Plin op 333291. Agua 8.20 el 20 de junio Plin op 222291.
+- Dpto 605: Alquiler 450 el 10 de junio BCP op 111291. Agua 7.90 el 22 de junio Yape op 999182.
+- Dpto 606: Alquiler 450 el 08 de junio BCP op 888182. Agua 8.00 el 21 de junio Plin op 777182.
+- Dpto 607: Alquiler 470 el 12 de junio Interbank op 666182. Agua 9.50 el 23 de junio Yape op 555182.`;
+
+      document.getElementById('rawInput').value = sample;
+      parseRawReport(sample);
+      showToast("Ejemplo cargado y estructurado correctamente", "check");
+    }
+
+    // ==========================================
+    // 7. PERSISTENCIA LOCALSTORAGE
+    // ==========================================
+    function saveToStorage() {
+      try {
+        const payload = {
+          month: document.getElementById('reportMonth').value,
+          rawInput: document.getElementById('rawInput').value,
+          unitsData: unitsData
+        };
+        localStorage.setItem('el_alamo_report_state', JSON.stringify(payload));
+      } catch (e) {
+        console.warn("Storage error", e);
+      }
+    }
+
+    function loadFromStorage() {
+      try {
+        const saved = localStorage.getItem('el_alamo_report_state');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.month) document.getElementById('reportMonth').value = parsed.month;
+          if (parsed.rawInput) document.getElementById('rawInput').value = parsed.rawInput;
+          if (parsed.unitsData) {
+            UNIT_DEFINITIONS.forEach(def => {
+              if (parsed.unitsData[def.id]) {
+                const u = parsed.unitsData[def.id];
+                if (u.alquilerFecha === undefined) {
+                  u.alquilerFecha = "";
+                  u.alquilerBanco = "BCP";
+                  u.alquilerBancoOtro = "";
+                  u.alquilerMotivoNoPago = "NO REPORTADO / PENDIENTE";
+                }
+                if (u.alquilerOperacion === undefined) {
+                  u.alquilerOperacion = "";
+                }
+                if (u.alquilerComprobante === undefined) {
+                  u.alquilerComprobante = "";
+                }
+                if (u.aguaFecha === undefined) {
+                  u.aguaFecha = "";
+                  u.aguaBanco = "PLIN";
+                  u.aguaBancoOtro = "";
+                  u.aguaMotivoNoPago = "NO REPORTADO / PENDIENTE";
+                }
+                if (u.aguaOperacion === undefined) {
+                  u.aguaOperacion = "";
+                }
+                if (u.aguaComprobante === undefined) {
+                  u.aguaComprobante = "";
+                }
+                unitsData[def.id] = { ...unitsData[def.id], ...u };
+              }
+            });
+            renderUnitsEditor();
+            updateOutputs();
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn("Storage load error", e);
+      }
+      return false;
+    }
+
+    // Inicialización al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('currentYear').innerText = new Date().getFullYear();
+      initUnitsData();
+      const restored = loadFromStorage();
+      if (!restored) {
+        renderUnitsEditor();
+        updateOutputs();
+      }
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
